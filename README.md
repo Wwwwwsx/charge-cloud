@@ -95,7 +95,3 @@ cd charge-ai && python3 -m venv .venv
 7. 网关限流 → 突发 50 请求产生 **10 个 429** ✅
 8. AI 自然语言查数 → 真实数据 + 标注来源工具 ✅
 9. AI 告警日报 → Markdown 结构化输出 ✅
-
-## 文档
-
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — 架构设计与关键决策（面试复习用）
