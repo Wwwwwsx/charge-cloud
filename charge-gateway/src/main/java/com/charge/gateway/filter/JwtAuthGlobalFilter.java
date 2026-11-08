@@ -66,6 +66,10 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
         if (WHITE_LIST.contains(path)) {
             return true;
         }
+        // 静态测试页（/index.html 等）无需登录即可打开，业务接口仍需 token
+        if (path.equals("/") || path.equals("/index.html") || path.equals("/favicon.ico")) {
+            return true;
+        }
         // 服务间内部接口（X-Internal-Secret 保护）不过网关，放行仅作兜底
         return path.startsWith("/auth/internal/");
     }
