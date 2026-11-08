@@ -1,0 +1,58 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: charge-gateway
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+    gateway:
+      # 全局限流：Redis 令牌桶，按用户/IP 维度
+      default-filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 20      # 每秒补充 20 个令牌
+            redis-rate-limiter.burstCapacity: 40      # 突发容量 40
+            redis-rate-limiter.requestedTokens: 1
+            key-resolver: "#{@apiKeyResolver}"
+      routes:
+        - id: auth
+          uri: lb://charge-auth
+          predicates:
+            - Path=/auth/**
+        - id: device
+          uri: lb://charge-device
+          predicates:
+            - Path=/devices/**
+        - id: alarm
+          uri: lb://charge-alarm
+          predicates:
+            - Path=/alarms/**,/alarm-rules/**
+        - id: ai
+          # Python AI 服务：注册中心之外的直连路由（演示 HTTP 集成）
+          uri: http://127.0.0.1:8085
+          predicates:
+            - Path=/ai/**
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+
+charge:
+  jwt:
+    secret: charge-cloud-jwt-secret-key-2026-abc123XYZ
+
+logging:
+  level:
+    com.charge: info
+    org.springframework.cloud.gateway: info

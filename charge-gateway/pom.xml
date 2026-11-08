@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.charge</groupId>
+        <artifactId>charge-cloud</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>charge-gateway</artifactId>
+    <name>charge-gateway</name>
+    <description>API 网关：统一路由、JWT 鉴权、Redis 限流</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.charge</groupId>
+            <artifactId>charge-common</artifactId>
+        </dependency>
+        <!-- 响应式网关（WebFlux），注意：不能引 starter-web -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-gateway</artifactId>
+        </dependency>
+        <!-- Redis 限流依赖（响应式） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis-reactive</artifactId>
+        </dependency>
+        <!-- lb:// 路由需要负载均衡器（缺失时会退化为 NoLoadBalancerClientFilter 直接 503） -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

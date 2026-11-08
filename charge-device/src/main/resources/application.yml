@@ -1,0 +1,45 @@
+server:
+  port: 8082
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+
+spring:
+  application:
+    name: charge-device
+  http:
+    encoding:
+      charset: UTF-8
+      force: true
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/charge_cloud?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+    username: charge
+    password: charge123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+
+charge:
+  jwt:
+    secret: charge-cloud-jwt-secret-key-2026-abc123XYZ
+  internal:
+    secret: charge-internal-secret-2026
+
+logging:
+  level:
+    com.charge: info
