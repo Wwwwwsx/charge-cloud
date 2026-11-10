@@ -26,8 +26,9 @@ public class AuthApplication {
 
     /**
      * 首次启动时初始化演示账号（幂等：表里有人就不插）
-     * admin/admin123   租户1（星星充电运营）
-     * operator2/operator123  租户2（另一家运营商）
+     * admin/admin            租户 100（公开演示租户，数据与私有租户隔离）
+     * operator2/operator123  租户 2（另一家运营商）
+     * 私有管理员账号只在服务器数据库中配置，不写入代码仓库
      */
     @Bean
     CommandLineRunner initUsers(SysUserMapper userMapper) {
@@ -37,8 +38,7 @@ public class AuthApplication {
                 return;
             }
             BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-            userMapper.insert(user(1L, "admin", encoder.encode("admin123"), "超级管理员", "ADMIN"));
-            userMapper.insert(user(1L, "operator1", encoder.encode("op123456"), "运营人员", "USER"));
+            userMapper.insert(user(100L, "admin", encoder.encode("admin"), "演示账号", "ADMIN"));
             userMapper.insert(user(2L, "operator2", encoder.encode("operator123"), "租户2管理员", "ADMIN"));
         };
     }

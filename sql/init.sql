@@ -105,4 +105,15 @@ VALUES (1, 'CHG-0004', '直流快充桩-04', '中山站', 'CRITICAL', '设备故
 INSERT INTO alarm_record (tenant_id, device_code, device_name, station, level, content, status, create_time, handle_time)
 VALUES (2, 'T2-0001', '租户2快充桩-01', '临港站', 'CRITICAL', '租户2的告警，租户1不可见', 'OPEN', NOW(), NULL);
 
+-- 公开演示租户 100：复制租户1 的设备、规则与告警，供演示账号 admin/admin 使用
+INSERT INTO device (tenant_id, code, name, station, power_kw, status, create_time, update_time)
+SELECT 100, code, name, station, power_kw, status, NOW(), NOW() FROM device WHERE tenant_id = 1;
+
+INSERT INTO alarm_rule (tenant_id, metric, `operator`, threshold, level, station, enabled, create_time)
+SELECT 100, metric, `operator`, threshold, level, station, enabled, NOW() FROM alarm_rule WHERE tenant_id = 1;
+
+INSERT INTO alarm_record (tenant_id, device_code, device_name, station, level, content, status, create_time, handle_time)
+SELECT 100, device_code, device_name, station, level, content, status, create_time, handle_time
+FROM alarm_record WHERE tenant_id = 1;
+
 SELECT 'charge-cloud 初始化完成' AS msg;
