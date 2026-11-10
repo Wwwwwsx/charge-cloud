@@ -3,24 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>充电桩运营平台 · 测试控制台</title>
+<title>充电桩运营平台</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:#f4f6fa; color:#2b3452; }
   header { background:linear-gradient(135deg,#1f3a6e,#2d5aa8); color:#fff; padding:16px 28px; display:flex; justify-content:space-between; align-items:center; }
   header h1 { font-size:18px; font-weight:600; }
-  header .who { font-size:13px; opacity:.85; }
+  header .who { font-size:13px; opacity:.9; display:flex; align-items:center; gap:12px; }
   header button { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.4); color:#fff; padding:5px 14px; border-radius:6px; cursor:pointer; font-size:13px; }
-  .wrap { max-width:1080px; margin:24px auto; padding:0 16px; }
+  .wrap { max-width:1180px; margin:24px auto; padding:0 16px; }
   .card { background:#fff; border-radius:10px; padding:20px 24px; margin-bottom:20px; box-shadow:0 1px 4px rgba(31,58,110,.08); }
-  .card h2 { font-size:15px; color:#1f3a6e; margin-bottom:14px; border-left:4px solid #2d5aa8; padding-left:10px; }
+  .card h2 { font-size:15px; color:#1f3a6e; margin-bottom:14px; border-left:4px solid #2d5aa8; padding-left:10px; display:flex; justify-content:space-between; align-items:center; }
+  .card h2 .ops { font-size:13px; font-weight:400; }
   .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
-  input,select { padding:8px 12px; border:1px solid #d4dbe8; border-radius:6px; font-size:14px; outline:none; }
+  input,select { padding:8px 12px; border:1px solid #d4dbe8; border-radius:6px; font-size:14px; outline:none; background:#fff; }
   input:focus,select:focus { border-color:#2d5aa8; }
   .btn { background:#2d5aa8; color:#fff; border:none; padding:9px 20px; border-radius:6px; font-size:14px; cursor:pointer; }
   .btn:hover { background:#1f3a6e; }
   .btn.ghost { background:#eef2f9; color:#2d5aa8; }
   .btn.warn { background:#e6a23c; }
+  .btn.danger { background:#d93026; }
+  .btn.mini { padding:4px 10px; font-size:12px; border-radius:5px; }
   table { width:100%; border-collapse:collapse; font-size:13px; }
   th,td { padding:9px 12px; text-align:left; border-bottom:1px solid #edf0f6; }
   th { background:#f0f3f9; color:#566388; font-weight:600; }
@@ -38,72 +41,123 @@
   #chat .ai { color:#2b3452; white-space:pre-wrap; }
   #chat .err { color:#d93026; }
   #report { background:#f7f9fd; border:1px solid #e6ebf5; border-radius:8px; padding:14px; font-size:14px; line-height:1.7; white-space:pre-wrap; display:none; }
-  #loginCard { max-width:400px; margin:60px auto; }
-  #loginCard input { width:100%; margin-bottom:12px; }
-  .tips { font-size:12px; color:#8a93a6; margin-top:8px; line-height:1.6; }
+  #authCard { max-width:420px; margin:50px auto; }
+  #authCard input { width:100%; margin-bottom:12px; }
+  .tabs { display:flex; gap:6px; margin-bottom:16px; }
+  .tabs button { flex:1; padding:9px; border:none; border-radius:6px; background:#eef2f9; color:#566388; cursor:pointer; font-size:14px; }
+  .tabs button.on { background:#2d5aa8; color:#fff; font-weight:600; }
+  .tips { font-size:12px; color:#8a93a6; margin-top:8px; line-height:1.7; }
   .msg { font-size:13px; color:#d93026; min-height:18px; margin-bottom:8px; }
+  .ok { color:#1a9e55; }
   .hidden { display:none; }
+  .mask { position:fixed; inset:0; background:rgba(20,30,55,.45); display:flex; align-items:center; justify-content:center; z-index:50; }
+  .modal { background:#fff; border-radius:10px; width:420px; max-width:92vw; padding:24px; box-shadow:0 12px 40px rgba(0,0,0,.2); }
+  .modal h3 { font-size:16px; color:#1f3a6e; margin-bottom:16px; }
+  .modal label { display:block; font-size:13px; color:#566388; margin-bottom:5px; }
+  .modal input,.modal select { width:100%; margin-bottom:12px; }
+  .modal .row { margin-bottom:0; justify-content:flex-end; }
+  .pager { display:flex; gap:8px; align-items:center; justify-content:flex-end; margin-top:12px; font-size:13px; color:#566388; }
+  .hide { display:none; }
+  .mask.hidden { display:none; }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>⚡ 充电桩运营平台 · 测试控制台</h1>
-  <div class="who"><span id="whoami"></span> <button onclick="logout()">退出</button></div>
+  <h1>⚡ 充电桩运营平台</h1>
+  <div class="who">
+    <span id="whoami"></span>
+    <button onclick="logout()">退出</button>
+  </div>
 </header>
 
-<!-- 登录 -->
-<div class="card" id="loginCard">
-  <h2>登录</h2>
-  <div class="msg" id="loginMsg"></div>
-  <input id="username" placeholder="用户名" value="admin">
-  <input id="password" type="password" placeholder="密码" value="admin123">
-  <button class="btn" style="width:100%" onclick="login()">登 录</button>
-  <div class="tips">演示账号：admin/admin123（租户1）· operator2/operator123（租户2，验证隔离）</div>
+<!-- ================= 登录 / 注册 ================= -->
+<div class="card" id="authCard">
+  <div class="tabs">
+    <button id="tabLogin" class="on" onclick="switchTab('login')">登录</button>
+    <button id="tabRegister" onclick="switchTab('register')">注册</button>
+  </div>
+
+  <div id="loginForm">
+    <div class="msg" id="loginMsg"></div>
+    <input id="username" placeholder="用户名（如 admin）">
+    <input id="password" type="password" placeholder="密码">
+    <button class="btn" style="width:100%" onclick="login()">登 录</button>
+    <div class="tips">演示账号：admin / admin123（租户1）· operator2 / operator123（租户2）<br>
+      两套账号数据互相隔离，用于演示多租户。</div>
+  </div>
+
+  <div id="registerForm" class="hidden">
+    <div class="msg" id="regMsg"></div>
+    <input id="regUser" placeholder="用户名（至少 3 个字符）">
+    <input id="regNick" placeholder="昵称（可不填）">
+    <input id="regPass" type="password" placeholder="密码（至少 6 位）">
+    <input id="regPass2" type="password" placeholder="确认密码">
+    <button class="btn" style="width:100%" onclick="register()">注册并登录</button>
+    <div class="tips">注册成功会自动开通一个独立租户，你的设备数据与他人完全隔离。</div>
+  </div>
 </div>
 
-<!-- 主界面 -->
+<!-- ================= 主界面 ================= -->
 <div class="wrap hidden" id="main">
 
+  <!-- 设备管理 -->
   <div class="card">
-    <h2>设备管理</h2>
+    <h2>设备管理
+      <span class="ops"><button class="btn mini" onclick="openDeviceModal()">+ 新建充电桩</button></span>
+    </h2>
     <div class="row">
-      <select id="dvStatus">
+      <select id="dvStatus" onchange="dvPage=1;loadDevices()">
         <option value="">全部状态</option>
         <option value="IDLE">空闲 IDLE</option>
         <option value="CHARGING">充电中 CHARGING</option>
         <option value="FAULT">故障 FAULT</option>
         <option value="OFFLINE">离线 OFFLINE</option>
       </select>
-      <input id="dvStation" placeholder="站点名，如 星海站">
-      <button class="btn" onclick="loadDevices()">查询设备</button>
+      <input id="dvStation" placeholder="站点名，如 星海站" onkeydown="if(event.key==='Enter'){dvPage=1;loadDevices()}">
+      <input id="dvKeyword" placeholder="编码 / 名称关键字" onkeydown="if(event.key==='Enter'){dvPage=1;loadDevices()}">
+      <button class="btn" onclick="dvPage=1;loadDevices()">查询</button>
       <span class="msg" id="dvMsg" style="margin:0"></span>
     </div>
     <table>
-      <thead><tr><th>编码</th><th>名称</th><th>站点</th><th>状态</th><th>更新时间</th></tr></thead>
-      <tbody id="dvBody"><tr><td colspan="5" style="color:#8a93a6">点击"查询设备"加载</td></tr></tbody>
+      <thead><tr>
+        <th>编码</th><th>名称</th><th>站点</th><th>功率</th><th>状态</th><th>更新时间</th><th style="width:210px">操作</th>
+      </tr></thead>
+      <tbody id="dvBody"><tr><td colspan="7" style="color:#8a93a6">加载中…</td></tr></tbody>
     </table>
+    <div class="pager">
+      <span id="dvPageInfo"></span>
+      <button class="btn ghost mini" id="dvPrev" onclick="changePage(-1)">上一页</button>
+      <button class="btn ghost mini" id="dvNext" onclick="changePage(1)">下一页</button>
+    </div>
   </div>
 
+  <!-- 告警监控 -->
   <div class="card">
-    <h2>告警监控</h2>
-    <div class="row">
-      <button class="btn" onclick="loadAlarms()">查询告警</button>
-      <button class="btn ghost" onclick="loadStats()">刷新统计</button>
-      <span class="msg" id="alMsg" style="margin:0"></span>
-    </div>
+    <h2>告警监控
+      <span class="ops">
+        <select id="alStatus" onchange="loadAlarms()" style="padding:4px 8px;font-size:12px">
+          <option value="">全部</option>
+          <option value="OPEN">未处理</option>
+          <option value="HANDLED">已处理</option>
+        </select>
+        <button class="btn ghost mini" onclick="loadStats()">刷新统计</button>
+      </span>
+    </h2>
     <div class="stats" id="statsBox">
       <div class="stat"><div class="n" id="stOpen">-</div><div class="l">未处理告警</div></div>
       <div class="stat"><div class="n" id="stCrit">-</div><div class="l">严重 CRITICAL</div></div>
       <div class="stat"><div class="n" id="stWarn">-</div><div class="l">警告 WARNING</div></div>
       <div class="stat" style="flex:2"><div class="n" id="stTop" style="font-size:14px;font-weight:600">-</div><div class="l">故障最多站点 Top3</div></div>
     </div>
+    <span class="msg" id="alMsg"></span>
     <table>
-      <thead><tr><th>级别</th><th>站点</th><th>设备</th><th>内容</th><th>状态</th><th>时间</th></tr></thead>
-      <tbody id="alBody"><tr><td colspan="6" style="color:#8a93a6">点击"查询告警"加载</td></tr></tbody>
+      <thead><tr><th>级别</th><th>站点</th><th>设备</th><th>内容</th><th>状态</th><th>时间</th><th>操作</th></tr></thead>
+      <tbody id="alBody"><tr><td colspan="7" style="color:#8a93a6">加载中…</td></tr></tbody>
     </table>
   </div>
 
+  <!-- AI 助手 -->
   <div class="card">
     <h2>AI 助手（自然语言查数 / 告警日报）</h2>
     <div id="chat"></div>
@@ -119,10 +173,45 @@
 
 </div>
 
+<!-- ================= 新建 / 编辑设备弹窗 ================= -->
+<div class="mask hidden" id="deviceMask">
+  <div class="modal">
+    <h3 id="deviceModalTitle">新建充电桩</h3>
+    <div class="msg" id="deviceModalMsg"></div>
+    <label>设备编码 *</label>
+    <input id="fCode" placeholder="如 CHG-0009（租户内唯一）">
+    <label>设备名称 *</label>
+    <input id="fName" placeholder="如 直流快充桩-09">
+    <label>所属站点</label>
+    <input id="fStation" placeholder="如 星海站">
+    <label>额定功率（kW）</label>
+    <input id="fPower" type="number" min="0" step="0.5" placeholder="如 120">
+    <label>初始状态</label>
+    <select id="fStatus">
+      <option value="IDLE">空闲 IDLE</option>
+      <option value="CHARGING">充电中 CHARGING</option>
+      <option value="FAULT">故障 FAULT</option>
+      <option value="OFFLINE">离线 OFFLINE</option>
+    </select>
+    <div class="row">
+      <button class="btn ghost" onclick="closeDeviceModal()">取消</button>
+      <button class="btn" onclick="saveDevice()">保存</button>
+    </div>
+  </div>
+</div>
+
 <script>
+const STATUS_TEXT = {IDLE:'空闲', CHARGING:'充电中', FAULT:'故障', OFFLINE:'离线'};
+
 let token = localStorage.getItem('cc_token') || '';
 let username = localStorage.getItem('cc_user') || '';
+let tenantId = localStorage.getItem('cc_tenant') || '';
 
+let dvPage = 1, dvSize = 10, dvPages = 1, dvTotal = 0;
+let dvList = [];
+let editingDeviceId = null;
+
+/* ---------- 通用请求 ---------- */
 async function api(method, path, body) {
   const headers = {'Content-Type':'application/json'};
   if (token) headers['Authorization'] = 'Bearer ' + token;
@@ -133,59 +222,245 @@ async function api(method, path, body) {
   return data.data;
 }
 
+/* ---------- 登录 / 注册 ---------- */
+function switchTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('tabLogin').classList.toggle('on', isLogin);
+  document.getElementById('tabRegister').classList.toggle('on', !isLogin);
+  document.getElementById('loginForm').classList.toggle('hidden', !isLogin);
+  document.getElementById('registerForm').classList.toggle('hidden', isLogin);
+}
+
 async function login() {
   const u = document.getElementById('username').value.trim();
   const p = document.getElementById('password').value;
-  document.getElementById('loginMsg').textContent = '';
+  const msg = document.getElementById('loginMsg');
+  msg.textContent = '';
+  if (!u || !p) { msg.textContent = '请输入用户名和密码'; return; }
   try {
     const d = await fetch('/auth/login', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({username:u, password:p})
     }).then(r => r.json());
     if (d.code !== 200) throw new Error(d.msg);
-    token = d.data.token; username = u;
-    localStorage.setItem('cc_token', token);
-    localStorage.setItem('cc_user', u);
+    setSession(d.data.token, u, d.data.tenantId);
     enter();
-  } catch(e) { document.getElementById('loginMsg').textContent = '登录失败：' + e.message; }
+  } catch(e) { msg.textContent = '登录失败：' + e.message; }
+}
+
+async function register() {
+  const u = document.getElementById('regUser').value.trim();
+  const nick = document.getElementById('regNick').value.trim();
+  const p = document.getElementById('regPass').value;
+  const p2 = document.getElementById('regPass2').value;
+  const msg = document.getElementById('regMsg');
+  msg.textContent = '';
+  if (u.length < 3) { msg.textContent = '用户名至少 3 个字符'; return; }
+  if (p.length < 6) { msg.textContent = '密码至少 6 位'; return; }
+  if (p !== p2) { msg.textContent = '两次输入的密码不一致'; return; }
+  try {
+    const d = await fetch('/auth/register', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username:u, password:p, nickname:nick || u})
+    }).then(r => r.json());
+    if (d.code !== 200) throw new Error(d.msg);
+    const lr = await fetch('/auth/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username:u, password:p})
+    }).then(r => r.json());
+    if (lr.code !== 200) throw new Error(lr.msg);
+    setSession(lr.data.token, u, lr.data.tenantId);
+    enter();
+    toast('注册成功，已为你开通独立租户');
+  } catch(e) { msg.textContent = '注册失败：' + e.message; }
+}
+
+function setSession(t, u, tid) {
+  token = t; username = u; tenantId = tid;
+  localStorage.setItem('cc_token', t);
+  localStorage.setItem('cc_user', u);
+  localStorage.setItem('cc_tenant', tid == null ? '' : tid);
 }
 
 function enter() {
-  document.getElementById('loginCard').classList.add('hidden');
+  document.getElementById('authCard').classList.add('hidden');
   document.getElementById('main').classList.remove('hidden');
-  document.getElementById('whoami').textContent = '当前用户：' + username;
+  document.getElementById('whoami').textContent =
+    '当前用户：' + username + (tenantId ? ' · 租户 ' + tenantId : '');
+  dvPage = 1;
   loadDevices(); loadStats(); loadAlarms();
 }
 
 function logout() {
-  token = ''; username = '';
-  localStorage.removeItem('cc_token'); localStorage.removeItem('cc_user');
+  token = ''; username = ''; tenantId = '';
+  localStorage.removeItem('cc_token'); localStorage.removeItem('cc_user'); localStorage.removeItem('cc_tenant');
   document.getElementById('main').classList.add('hidden');
-  document.getElementById('loginCard').classList.remove('hidden');
+  document.getElementById('authCard').classList.remove('hidden');
+  document.getElementById('chat').innerHTML = '';
+  document.getElementById('report').style.display = 'none';
+  switchTab('login');
 }
 
+/* ---------- 设备管理 ---------- */
 async function loadDevices() {
   const msg = document.getElementById('dvMsg'); msg.textContent = '';
   try {
     const status = document.getElementById('dvStatus').value;
     const station = document.getElementById('dvStation').value.trim();
-    const d = await api('GET', `/devices?page=1&size=20&status=${status}&station=${encodeURIComponent(station)}`);
-    const rows = (d.records || []).map(r =>
-      `<tr><td>${r.code}</td><td>${r.name}</td><td>${r.station}</td>
-       <td><span class="tag t-${r.status}">${r.status}</span></td><td>${r.updateTime||'-'}</td></tr>`).join('');
-    document.getElementById('dvBody').innerHTML = rows || '<tr><td colspan="5" style="color:#8a93a6">无数据</td></tr>';
+    const keyword = document.getElementById('dvKeyword').value.trim();
+    const d = await api('GET', `/devices?page=${dvPage}&size=${dvSize}`
+      + `&status=${encodeURIComponent(status)}`
+      + `&station=${encodeURIComponent(station)}`
+      + `&keyword=${encodeURIComponent(keyword)}`);
+    dvList = d.records || [];
+    dvTotal = d.total || 0;
+    dvPages = d.pages || 1;
+    renderDevices();
+  } catch(e) {
+    msg.textContent = e.message;
+    document.getElementById('dvBody').innerHTML =
+      '<tr><td colspan="7" style="color:#8a93a6">加载失败</td></tr>';
+  }
+}
+
+function renderDevices() {
+  const body = document.getElementById('dvBody');
+  if (!dvList.length) {
+    body.innerHTML = '<tr><td colspan="7" style="color:#8a93a6">暂无设备，点击右上角“+ 新建充电桩”添加</td></tr>';
+  } else {
+    body.innerHTML = dvList.map(r => {
+      const s = r.status || 'IDLE';
+      return `<tr>
+        <td>${esc(r.code)}</td>
+        <td>${esc(r.name)}</td>
+        <td>${esc(r.station || '-')}</td>
+        <td>${r.powerKw != null ? r.powerKw + ' kW' : '-'}</td>
+        <td><span class="tag t-${s}">${STATUS_TEXT[s] || s}</span></td>
+        <td>${esc(r.updateTime || '-')}</td>
+        <td>
+          <select onchange="reportStatus(${r.id}, this.value); this.value='';" style="padding:4px 6px;font-size:12px">
+            <option value="">上报状态</option>
+            <option value="IDLE">空闲</option>
+            <option value="CHARGING">充电中</option>
+            <option value="FAULT">故障</option>
+            <option value="OFFLINE">离线</option>
+          </select>
+          <button class="btn ghost mini" onclick="openDeviceModal(${r.id})">编辑</button>
+          <button class="btn danger mini" onclick="deleteDevice(${r.id})">删除</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+  document.getElementById('dvPageInfo').textContent = `共 ${dvTotal} 条 · 第 ${dvPage}/${dvPages} 页`;
+  document.getElementById('dvPrev').disabled = dvPage <= 1;
+  document.getElementById('dvNext').disabled = dvPage >= dvPages;
+}
+
+function changePage(delta) {
+  const p = dvPage + delta;
+  if (p < 1 || p > dvPages) return;
+  dvPage = p;
+  loadDevices();
+}
+
+function findDevice(id) {
+  return dvList.find(d => d.id === id);
+}
+
+function openDeviceModal(id) {
+  editingDeviceId = id || null;
+  const msg = document.getElementById('deviceModalMsg'); msg.textContent = '';
+  document.getElementById('deviceModalTitle').textContent = id ? '编辑充电桩' : '新建充电桩';
+  const d = id ? findDevice(id) : null;
+  document.getElementById('fCode').value = d ? (d.code || '') : '';
+  document.getElementById('fName').value = d ? (d.name || '') : '';
+  document.getElementById('fStation').value = d ? (d.station || '') : '';
+  document.getElementById('fPower').value = d && d.powerKw != null ? d.powerKw : '';
+  document.getElementById('fStatus').value = d ? (d.status || 'IDLE') : 'IDLE';
+  document.getElementById('deviceMask').classList.remove('hidden');
+}
+
+function closeDeviceModal() {
+  document.getElementById('deviceMask').classList.add('hidden');
+  editingDeviceId = null;
+}
+
+async function saveDevice() {
+  const msg = document.getElementById('deviceModalMsg'); msg.textContent = '';
+  const device = {
+    code: document.getElementById('fCode').value.trim(),
+    name: document.getElementById('fName').value.trim(),
+    station: document.getElementById('fStation').value.trim() || null,
+    powerKw: document.getElementById('fPower').value ? Number(document.getElementById('fPower').value) : null,
+    status: document.getElementById('fStatus').value
+  };
+  if (!device.code) { msg.textContent = '设备编码不能为空'; return; }
+  if (!device.name) { msg.textContent = '设备名称不能为空'; return; }
+  try {
+    if (editingDeviceId) {
+      await api('PUT', `/devices/${editingDeviceId}`, device);
+      toast('设备已更新');
+    } else {
+      await api('POST', '/devices', device);
+      toast('充电桩创建成功');
+    }
+    closeDeviceModal();
+    dvPage = 1;
+    loadDevices();
   } catch(e) { msg.textContent = e.message; }
 }
 
+async function deleteDevice(id) {
+  const d = findDevice(id);
+  const code = d ? d.code : id;
+  if (!confirm(`确定删除设备 ${code} ？删除后不可恢复。`)) return;
+  try {
+    await api('DELETE', `/devices/${id}`);
+    toast('设备已删除');
+    if (dvList.length === 1 && dvPage > 1) dvPage--;
+    loadDevices(); loadStats(); loadAlarms();
+  } catch(e) { toast('删除失败：' + e.message); }
+}
+
+async function reportStatus(id, status) {
+  if (!status) return;
+  try {
+    await api('POST', `/devices/${id}/status?status=${encodeURIComponent(status)}`);
+    toast('状态已更新为 ' + (STATUS_TEXT[status] || status));
+    loadDevices();
+    if (status === 'FAULT') { loadAlarms(); loadStats(); }
+  } catch(e) { toast('状态上报失败：' + e.message); }
+}
+
+/* ---------- 告警 ---------- */
 async function loadAlarms() {
   const msg = document.getElementById('alMsg'); msg.textContent = '';
   try {
-    const d = await api('GET', '/alarms?page=1&size=20');
-    const rows = (d.records || []).map(r =>
-      `<tr><td><span class="tag t-${r.level}">${r.level}</span></td><td>${r.station}</td><td>${r.deviceName}</td>
-       <td>${r.content}</td><td><span class="tag t-${r.status}">${r.status}</span></td><td>${r.createTime||'-'}</td></tr>`).join('');
-    document.getElementById('alBody').innerHTML = rows || '<tr><td colspan="6" style="color:#8a93a6">无数据</td></tr>';
+    const status = document.getElementById('alStatus').value;
+    const d = await api('GET', `/alarms?page=1&size=20&status=${encodeURIComponent(status)}`);
+    const rows = (d.records || []).map(r => `
+      <tr>
+        <td><span class="tag t-${r.level}">${r.level}</span></td>
+        <td>${esc(r.station || '-')}</td>
+        <td>${esc(r.deviceName || r.deviceCode || '-')}</td>
+        <td>${esc(r.content)}</td>
+        <td><span class="tag t-${r.status}">${r.status === 'OPEN' ? '未处理' : '已处理'}</span></td>
+        <td>${esc(r.createTime || '-')}</td>
+        <td>${r.status === 'OPEN'
+          ? `<button class="btn mini" onclick="handleAlarm(${r.id})">处理</button>`
+          : '-'}</td>
+      </tr>`).join('');
+    document.getElementById('alBody').innerHTML =
+      rows || '<tr><td colspan="7" style="color:#8a93a6">暂无告警</td></tr>';
   } catch(e) { msg.textContent = e.message; }
+}
+
+async function handleAlarm(id) {
+  try {
+    await api('PUT', `/alarms/${id}/handle`);
+    toast('告警已标记处理');
+    loadAlarms(); loadStats();
+  } catch(e) { toast('处理失败：' + e.message); }
 }
 
 async function loadStats() {
@@ -201,12 +476,13 @@ async function loadStats() {
   } catch(e) { document.getElementById('stOpen').textContent = '加载失败'; }
 }
 
+/* ---------- AI ---------- */
 async function ask() {
   const q = document.getElementById('q').value.trim();
   if (!q) return;
   const box = document.getElementById('chat');
   const msg = document.getElementById('aiMsg'); msg.textContent = '';
-  box.insertAdjacentHTML('beforeend', `<div class="me">🙋 ${escapeHtml(q)}</div>`);
+  box.insertAdjacentHTML('beforeend', `<div class="me">🙋 ${esc(q)}</div>`);
   document.getElementById('q').value = '';
   const loading = document.createElement('div');
   loading.className = 'ai'; loading.textContent = '⏳ 思考中…';
@@ -229,7 +505,27 @@ async function dailyReport() {
   } catch(e) { msg.textContent = '生成失败：' + e.message; }
 }
 
-function escapeHtml(s){ return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+/* ---------- 工具 ---------- */
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+let toastTimer = null;
+function toast(text) {
+  let el = document.getElementById('toastBox');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toastBox';
+    el.style.cssText = 'position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:99;'
+      + 'background:#1f3a6e;color:#fff;padding:9px 20px;border-radius:8px;font-size:13px;'
+      + 'box-shadow:0 6px 20px rgba(0,0,0,.2);transition:opacity .3s';
+    document.body.appendChild(el);
+  }
+  el.textContent = text;
+  el.style.opacity = '1';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.style.opacity = '0'; }, 2200);
+}
 
 if (token) enter();
 </script>

@@ -48,13 +48,17 @@ public class AuthService {
             throw new BizException("用户名已被注册");
         }
         SysUser u = new SysUser();
-        u.setTenantId(1L); // 新用户默认进租户1，演示够用
+        u.setTenantId(0L); // 先占位，插入拿到自增 id 后回填为独立租户
         u.setUsername(req.username());
         u.setPassword(encoder.encode(req.password()));
         u.setNickname(req.nickname() == null || req.nickname().isBlank() ? req.username() : req.nickname());
-        u.setRole("USER");
+        u.setRole("ADMIN");
         u.setCreateTime(LocalDateTime.now());
         userMapper.insert(u);
+        // 每个注册用户独立一个租户（tenant_id = 用户 id），数据天然隔离，
+        // 与内置账号 admin(1)/operator2(2) 的约定保持一致
+        u.setTenantId(u.getId());
+        userMapper.updateById(u);
     }
 
     public TokenResp login(LoginReq req) {
