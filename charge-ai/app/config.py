@@ -16,4 +16,9 @@ ALARM_BASE_URL = os.getenv("ALARM_BASE_URL", "http://127.0.0.1:8083")
 # ---- Agent 模式：auto=自动降级 / tool=仅工具调用 / react=仅 ReAct ----
 AGENT_MODE = os.getenv("AGENT_MODE", "auto")
 
+# ---- Agent 动作签名：计划令牌的 HMAC 密钥与有效期（秒）----
+# 生产环境务必在 .env 中配置随机密钥
+ACTION_SECRET = os.getenv("ACTION_SECRET", "charge-cloud-agent-action-secret")
+ACTION_TTL = int(os.getenv("ACTION_TTL", "600"))
+
 HTTP_TIMEOUT = float(os.getenv("HTTP_TIMEOUT", "15"))

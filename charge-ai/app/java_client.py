@@ -22,6 +22,23 @@ def _get(token: str, base: str, path: str, params: dict | None = None) -> dict:
         return {"ok": False, "error": f"服务调用失败: {e}"}
 
 
+def _put(token: str, base: str, path: str) -> dict:
+    """带用户 JWT 的 PUT 请求（Agent 写操作调用）"""
+    url = f"{base}{path}"
+    try:
+        resp = httpx.put(
+            url,
+            headers={"Authorization": token},
+            timeout=config.HTTP_TIMEOUT,
+        )
+        data = resp.json()
+        if data.get("code") != 200:
+            return {"ok": False, "error": data.get("msg", f"HTTP {resp.status_code}")}
+        return {"ok": True, "data": data.get("data")}
+    except Exception as e:
+        return {"ok": False, "error": f"服务调用失败: {e}"}
+
+
 def list_devices(token: str, status: str = "", station: str = "", keyword: str = "") -> dict:
     return _get(token, config.DEVICE_BASE_URL, "/devices",
                 {"page": 1, "size": 20, "status": status, "station": station, "keyword": keyword})
@@ -31,9 +48,14 @@ def get_device(token: str, code: str) -> dict:
     return _get(token, config.DEVICE_BASE_URL, f"/devices/code/{code}")
 
 
-def list_alarms(token: str, level: str = "", status: str = "") -> dict:
+def list_alarms(token: str, level: str = "", status: str = "", size: int = 20) -> dict:
     return _get(token, config.ALARM_BASE_URL, "/alarms",
-                {"page": 1, "size": 20, "level": level, "status": status})
+                {"page": 1, "size": size, "level": level, "status": status})
+
+
+def handle_alarm(token: str, alarm_id: int) -> dict:
+    """标记单条告警为已处理（租户校验由 Java 侧按 JWT 完成）"""
+    return _put(token, config.ALARM_BASE_URL, f"/alarms/{alarm_id}/handle")
 
 
 def alarm_stats(token: str) -> dict:

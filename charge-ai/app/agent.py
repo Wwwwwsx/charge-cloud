@@ -13,10 +13,13 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 
-from . import config, java_client
+from . import actions, config, java_client
 
 # 当前请求的用户 token：工具通过它携带登录态（线程安全的上下文变量）
 _token: ContextVar[str] = ContextVar("token")
+
+# 当前请求里待用户确认的动作计划（工具写入，接口读出）
+_pending: ContextVar[list | None] = ContextVar("pending", default=None)
 
 
 def _call(result: dict) -> str:
@@ -26,7 +29,14 @@ def _call(result: dict) -> str:
     return json.dumps(result.get("data"), ensure_ascii=False, default=str)
 
 
-# ===================== 4 个业务工具 =====================
+def _write_call(result: dict) -> str:
+    """写操作的结果转文本：成功就明确说成功，失败给出原因"""
+    if not result.get("ok"):
+        return f"执行失败：{result.get('error')}"
+    return "执行成功"
+
+
+# ===================== 只读查询工具 =====================
 
 @tool
 def list_devices(status: str = "", station: str = "", keyword: str = "") -> str:
@@ -52,15 +62,60 @@ def alarm_stats() -> str:
     return _call(java_client.alarm_stats(_token.get()))
 
 
-TOOLS = [list_devices, get_device, list_alarms, alarm_stats]
+# ===================== 写操作工具（动作执行） =====================
 
-SYSTEM_PROMPT = """你是充电桩运营平台的智能分析助手「充电小管家」。
+@tool
+def handle_alarm(alarm_id: int) -> str:
+    """处理单条告警（低风险，立即执行）。alarm_id 从 list_alarms 的返回结果中获取。"""
+    return _write_call(java_client.handle_alarm(_token.get(), alarm_id))
+
+
+@tool
+def plan_batch_handle(level: str = "", station: str = "") -> str:
+    """生成批量处置告警的计划（不直接执行，需用户确认）。
+    可选参数：level=WARNING/CRITICAL，station=站点名；都为空表示全部未处理告警。"""
+    result = java_client.list_alarms(_token.get(), level=level, status="OPEN", size=100)
+    if not result.get("ok"):
+        return f"查询失败：{result.get('error')}"
+
+    records = (result.get("data") or {}).get("records") or []
+    if station:
+        records = [a for a in records if a.get("station") == station]
+    if not records:
+        return "没有符合条件的未处理告警，无需处置。"
+
+    note = ""
+    if len(records) > actions.MAX_BATCH:
+        records = records[:actions.MAX_BATCH]
+        note = f"（单次上限 {actions.MAX_BATCH} 条，本次先处置前 {actions.MAX_BATCH} 条）"
+
+    parts = []
+    if level:
+        parts.append(f"{level} 级别")
+    if station:
+        parts.append(f"{station} 站点")
+    scope = ("、".join(parts) + " 的 " if parts else "全部 ") + f"未处理告警 {len(records)} 条{note}"
+
+    plan = actions.build_handle_plan(records, scope)
+    pending = _pending.get()
+    if pending is not None:
+        pending.append(plan)
+    return f"已生成处置计划：{scope}，已提交给用户确认。确认前不要声称已经处理。"
+
+
+TOOLS = [list_devices, get_device, list_alarms, alarm_stats, handle_alarm, plan_batch_handle]
+
+SYSTEM_PROMPT = """你是充电桩运营平台的智能运营助手「充电小管家」。
 
 工作守则：
 1. 回答业务数据问题时，必须先调用工具查询，禁止凭记忆编造数字；
 2. 工具返回失败时，如实告知用户失败原因，不要编造结果；
 3. 回答用简体中文，简洁清晰，涉及数字时给出出处（来自哪个工具）；
-4. 与充电桩无关的闲聊可以正常回应，但涉及平台数据一律走工具。
+4. 与充电桩无关的闲聊可以正常回应，但涉及平台数据一律走工具；
+5. 处置告警分两档：单条用 handle_alarm 立即执行；两条及以上或“全部/批量”必须用
+   plan_batch_handle 生成处置计划，等用户点击确认后再由系统执行，确认前不得声称已处理；
+6. 工具返回执行结果后，如实汇报成功/失败数量，失败时说明原因；
+7. 对话回答用纯文本（可用 - 列表），不要输出 Markdown 表格或 ** 加粗，前端按纯文本展示。
 """
 
 
@@ -127,16 +182,20 @@ def _executor_for(mode: str):
     return _executor
 
 
-def run_agent(question: str, token: str) -> str:
-    """执行一轮问答。auto 模式下工具调用失败自动降级 ReAct。"""
+def run_agent(question: str, token: str) -> dict:
+    """执行一轮问答，返回回答 + 待用户确认的动作计划。
+    auto 模式下工具调用失败自动降级 ReAct。
+    """
     _token.set(token)
+    pending: list = []
+    _pending.set(pending)
     mode = config.AGENT_MODE
 
     if mode in ("auto", "tool"):
         try:
             result = _executor_for("tool").invoke(
                 {"input": question, "chat_history": []})
-            return str(result.get("output", ""))
+            return {"answer": str(result.get("output", "")), "actions": pending}
         except Exception as e:
             if mode == "tool":
                 raise
@@ -146,11 +205,11 @@ def run_agent(question: str, token: str) -> str:
                 _reset()
                 result = _executor_for("react").invoke(
                     {"input": question, "chat_history": []})
-                return str(result.get("output", ""))
+                return {"answer": str(result.get("output", "")), "actions": pending}
             raise
 
     result = _executor_for("react").invoke({"input": question, "chat_history": []})
-    return str(result.get("output", ""))
+    return {"answer": str(result.get("output", "")), "actions": pending}
 
 
 def _reset():

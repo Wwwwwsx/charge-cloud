@@ -1,8 +1,13 @@
-# charge-cloud · 充电桩运营微服务云平台（含 AI 分析）
+# charge-cloud · 充电桩运营微服务云平台（含 AI 运营 Agent）
 
+<<<<<<< HEAD
 面向充电站运营场景的**多租户微服务系统**：充电桩资产管理、告警监控、AI 自然语言查数与告警日报。
 模拟充电桩云端开发服务商面向多个运营商家使用的场景，各个运营商数据分离。
 
+=======
+面向充电站运营场景的**多租户微服务系统**：充电桩资产管理、告警监控、
+AI 自然语言查数、告警日报与告警自动处置。
+>>>>>>> 75119eb (feat: AI 升级为可处置告警的运营 Agent，批量处置增加签名确认)
 在线体验平台：http://124.222.85.26:8080
 ## 架构总览
 
@@ -26,8 +31,8 @@
                                            │ HTTP + 用户 JWT（服务间直连）
                         ┌──────────────────▼───────────────────────────┐
                         │   charge-ai  :8085  Python（FastAPI+LangChain）│
-                        │   Tool Calling Agent（4 个工具，ReAct 降级）    │
-                        │   告警日报生成  ·  自然语言查数                  │
+                        │   Tool Calling Agent（6 个工具，ReAct 降级）    │
+                        │   查数/日报  ·  告警自动处置（规划-确认-执行）   │
                         └──────────────────┬───────────────────────────┘
                                            │ OpenAI 兼容协议
                                    ┌───────▼────────┐
@@ -43,6 +48,22 @@
 | 数据 | MySQL 8（MyBatis-Plus）· Redis（缓存 + 网关限流） |
 | Python AI | FastAPI · LangChain 0.3 · Tool Calling Agent / ReAct 降级 |
 | 模型 | 商汤日日新（OpenAI 兼容协议，可换 DeepSeek/智谱等任何兼容接口） |
+
+## Agent 动作执行（Human-in-the-loop）
+
+AI 不只是问答，能真正处置告警：
+
+1. **单条处置**：Agent 调 `handle_alarm` 立即执行（低风险）；
+2. **批量处置**：Agent 调 `plan_batch_handle` 生成计划 → 服务端 HMAC 签名令牌 → 前端展示计划卡片 → 用户点「确认执行」→ `POST /ai/actions/execute` 验签后逐条调用 Java 接口；
+3. **安全约束**：动作白名单、令牌 10 分钟过期、防重放、单次最多 50 条；租户权限仍由 Java 按 JWT 强制校验；
+4. **执行轨迹**：逐条返回成功/失败，前端展示并自动刷新告警列表。
+
+```
+用户："把未处理的 WARNING 告警都处理掉"
+  → Agent 查询 → 生成处置计划（签名令牌）
+  → 用户确认 → 验签 → 逐条 PUT /alarms/{id}/handle
+  → 返回 {total, ok, failed, results[]}
+```
 
 ## 端口规划
 
@@ -74,7 +95,7 @@ java -jar charge-gateway/target/charge-gateway-1.0.0.jar &
 # 3. Python AI 服务
 cd charge-ai && python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-# 配置 .env（LLM_API_KEY 等）
+# 配置 .env（LLM_API_KEY、ACTION_SECRET 等）
 .venv/bin/uvicorn app.main:app --port 8085 &
 ```
 
@@ -98,3 +119,6 @@ cd charge-ai && python3 -m venv .venv
 7. 网关限流 → 突发 50 请求产生 **10 个 429** ✅
 8. AI 自然语言查数 → 真实数据 + 标注来源工具 ✅
 9. AI 告警日报 → Markdown 结构化输出 ✅
+10. Agent 单条处置告警 → 状态变为 HANDLED ✅
+11. Agent 批量处置计划 → 确认执行 → 全部处理并返回执行轨迹 ✅
+12. 篡改 / 过期 / 重复使用动作令牌 → **400 拒绝** ✅

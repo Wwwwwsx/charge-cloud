@@ -1,17 +1,21 @@
-"""charge-ai：Python AI 分析服务（FastAPI + LangChain）
+"""charge-ai：Python AI 运营 Agent 服务（FastAPI + LangChain）
 经网关路由为 /ai/**，端口 8085
 """
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 
-from . import config, java_client
+from . import actions, config, java_client
 from .agent import run_agent
 
-app = FastAPI(title="charge-ai", description="充电桩平台 AI 分析服务")
+app = FastAPI(title="charge-ai", description="充电桩平台 AI 运营 Agent 服务")
 
 
 class ChatReq(BaseModel):
     question: str
+
+
+class ActionReq(BaseModel):
+    token: str
 
 
 @app.get("/ai/health")
@@ -27,10 +31,27 @@ def chat(req: ChatReq, authorization: str = Header(default="")):
     if not req.question or not req.question.strip():
         raise HTTPException(status_code=400, detail="问题不能为空")
     try:
-        answer = run_agent(req.question.strip(), authorization)
-        return {"code": 200, "msg": "success", "data": {"answer": answer}}
+        result = run_agent(req.question.strip(), authorization)
+        return {"code": 200, "msg": "success", "data": {
+            "answer": result["answer"],
+            "actions": result["actions"],
+        }}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI 处理失败: {e}")
+
+
+@app.post("/ai/actions/execute")
+def execute_action(req: ActionReq, authorization: str = Header(default="")):
+    """确认后执行动作计划：验签 + 白名单校验 + 逐条执行"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="缺少登录凭证")
+    try:
+        result = actions.execute(req.token, authorization)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"执行失败: {e}")
+    return {"code": 200, "msg": "success", "data": result}
 
 
 @app.get("/ai/daily-report")
